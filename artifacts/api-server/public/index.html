@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitor de Salas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f8fafc;
+    }
+
+    header p {
+      margin-top: 0.4rem;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    #status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    #status-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover { border-color: #4f6eff; }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title .icon {
+      font-size: 1.3rem;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid #1a2840;
+    }
+
+    .metric:last-child { border-bottom: none; }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .badge {
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge.present { background: #14532d; color: #4ade80; }
+    .badge.absent  { background: #3f1e1e; color: #f87171; }
+    .badge.null    { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+
+    .ruido-bar-wrap {
+      margin-top: 1rem;
+    }
+
+    .ruido-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-bottom: 0.4rem;
+    }
+
+    .ruido-bar-bg {
+      background: #0f1117;
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .ruido-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s ease, background 0.4s ease;
+    }
+
+    .timestamp {
+      margin-top: 0.85rem;
+      font-size: 0.75rem;
+      color: #475569;
+      text-align: right;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.75rem;
+      color: #334155;
+    }
+
+    /* Test form */
+    .test-section {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 2.5rem;
+    }
+
+    .test-section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .test-form {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .form-group label {
+      font-size: 0.78rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group select,
+    .form-group input {
+      background: #0f1117;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+      border-color: #4f6eff;
+    }
+
+    button[type="submit"] {
+      background: #4f6eff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      align-self: flex-end;
+    }
+
+    button[type="submit"]:hover { background: #3b52d4; }
+
+    #msg {
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: #4ade80;
+      min-height: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏢 Monitor de Salas</h1>
+  <p>Atualização automática a cada 3 segundos</p>
+  <span id="status-badge"><span class="dot"></span> <span id="conn-label">Conectando…</span></span>
+</header>
+
+<div class="grid" id="grid">
+  <!-- cards inserted by JS -->
+</div>
+
+<div class="test-section">
+  <h2>Enviar dados de teste</h2>
+  <form class="test-form" id="test-form">
+    <div class="form-group">
+      <label for="f-sala">Sala</label>
+      <select id="f-sala" name="sala">
+        <option value="sala1">Sala 1</option>
+        <option value="sala2">Sala 2</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="f-ruido">Ruído (dB)</label>
+      <input type="number" id="f-ruido" name="ruido" min="0" max="130" placeholder="ex: 45" />
+    </div>
+    <div class="form-group">
+      <label for="f-presenca">Presença</label>
+      <select id="f-presenca" name="presenca">
+        <option value="true">Sim</option>
+        <option value="false">Não</option>
+      </select>
+    </div>
+    <button type="submit">Enviar</button>
+  </form>
+  <div id="msg"></div>
+</div>
+
+<footer>Monitor de Salas &mdash; dados em tempo real via API</footer>
+
+<script>
+  const BASE = '/api';
+
+  function ruidoColor(v) {
+    if (v === null) return '#4f6eff';
+    if (v < 40)  return '#22c55e';
+    if (v < 70)  return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function formatTs(ts) {
+    if (!ts) return '—';
+    try {
+      return new Date(ts).toLocaleString('pt-BR');
+    } catch { return ts; }
+  }
+
+  function buildCard(key, data) {
+    const label = key === 'sala1' ? 'Sala 1' : key === 'sala2' ? 'Sala 2' : key;
+    const ruidoVal = data.ruido !== null ? `${data.ruido} dB` : '—';
+    const pct = data.ruido !== null ? Math.min(data.ruido, 130) / 130 * 100 : 0;
+    const barColor = ruidoColor(data.ruido);
+
+    const presencaBadge =
+      data.presenca === null
+        ? '<span class="badge null">—</span>'
+        : data.presenca
+          ? '<span class="badge present">Detectada</span>'
+          : '<span class="badge absent">Ausente</span>';
+
+    return `
+      <div class="card" id="card-${key}">
+        <div class="card-title"><span class="icon">🚪</span>${label}</div>
+        <div class="metric">
+          <span class="metric-label">Ruído</span>
+          <span class="metric-value">${ruidoVal}</span>
+        </div>
+        <div class="ruido-bar-wrap">
+          <div class="ruido-bar-label"><span>0 dB</span><span>130 dB</span></div>
+          <div class="ruido-bar-bg">
+            <div class="ruido-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+          </div>
+        </div>
+        <div class="metric" style="margin-top:0.85rem;">
+          <span class="metric-label">Presença</span>
+          ${presencaBadge}
+        </div>
+        <div class="timestamp">Última atualização: ${formatTs(data.ultimaAtualizacao)}</div>
+      </div>`;
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch(`${BASE}/status-geral`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const grid = document.getElementById('grid');
+      grid.innerHTML = Object.entries(data).map(([k, v]) => buildCard(k, v)).join('');
+
+      document.getElementById('conn-label').textContent = 'Ao vivo';
+    } catch (e) {
+      document.getElementById('conn-label').textContent = 'Erro de conexão';
+    }
+  }
+
+  // initial load + polling
+  fetchStatus();
+  setInterval(fetchStatus, 3000);
+
+  // test form
+  document.getElementById('test-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sala = document.getElementById('f-sala').value;
+    const ruido = document.getElementById('f-ruido').value;
+    const presenca = document.getElementById('f-presenca').value;
+    const msg = document.getElementById('msg');
+
+    const body = { sala };
+    if (ruido !== '') body.ruido = Number(ruido);
+    body.presenca = presenca === 'true';
+
+    try {
+      const res = await fetch(`${BASE}/atualizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      msg.style.color = res.ok ? '#4ade80' : '#f87171';
+      msg.textContent = res.ok
+        ? `✓ ${json.mensagem}`
+        : `✗ ${json.erro || 'Erro desconhecido'}`;
+      if (res.ok) fetchStatus();
+    } catch (err) {
+      msg.style.color = '#f87171';
+      msg.textContent = '✗ Falha ao conectar com a API.';
+    }
+
+    setTimeout(() => { msg.textContent = ''; }, 4000);
+  });
+</script>
+
+</body>
+</html>
