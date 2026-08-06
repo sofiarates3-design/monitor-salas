@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Monitor de Salas"
+description = "Painel web para monitorar dados de sensores das salas em tempo real."
+version = "1.0.0"
+id = "artifacts/monitor-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24490
+
+[services.development]
+run = "pnpm --filter @workspace/monitor-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/monitor-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/monitor-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24490"
+BASE_PATH = "/"

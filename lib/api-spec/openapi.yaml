@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: sensors
+    description: Sensor data operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /status-geral:
+    get:
+      operationId: getStatusGeral
+      tags: [sensors]
+      summary: Get all rooms status
+      description: Returns the complete sensor database for all rooms
+      responses:
+        "200":
+          description: All rooms data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseStatus"
+
+  /atualizar:
+    post:
+      operationId: atualizarSala
+      tags: [sensors]
+      summary: Update room sensor data
+      description: Receives sala, ruido, and presenca and updates the in-memory database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorInput"
+      responses:
+        "200":
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorUpdateResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +83,64 @@ components:
       required:
         - status
 
+    SalaData:
+      type: object
+      properties:
+        ruido:
+          type: ["number", "null"]
+        presenca:
+          type: ["boolean", "null"]
+        ultimaAtualizacao:
+          type: ["string", "null"]
+      required:
+        - ruido
+        - presenca
+        - ultimaAtualizacao
+
+    DatabaseStatus:
+      type: object
+      properties:
+        sala1:
+          $ref: "#/components/schemas/SalaData"
+        sala2:
+          $ref: "#/components/schemas/SalaData"
+      required:
+        - sala1
+        - sala2
+
+    SensorInput:
+      type: object
+      properties:
+        sala:
+          type: string
+          description: Room key (e.g. "sala1" or "sala2")
+        ruido:
+          type: number
+          description: Noise level in dB
+        presenca:
+          type: boolean
+          description: Whether presence is detected
+      required:
+        - sala
+
+    SensorUpdateResponse:
+      type: object
+      properties:
+        mensagem:
+          type: string
+        sala:
+          type: string
+        dados:
+          $ref: "#/components/schemas/SalaData"
+      required:
+        - mensagem
+        - sala
+        - dados
+
+    ErrorResponse:
+      type: object
+      properties:
+        erro:
+          type: string
+      required:
+        - erro
